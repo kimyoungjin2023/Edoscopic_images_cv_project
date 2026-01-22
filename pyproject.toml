@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multitask-vision"
+version = "0.1.0"
+description = "Object Detection and Segmentation Multi-task Learning"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+
+dependencies = [
+    "torch>=1.13.0",
+    "torchvision>=0.14.0",
+    "numpy>=1.21.0",
+    "opencv-python>=4.7.0",
+    "albumentations>=1.3.0",
+    "pyyaml>=6.0",
+    "tqdm>=4.64.0",
+    "matplotlib>=3.6.0",
+    "tensorboard>=2.11.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
