@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="multitask-vision",
+    name="Edoscopic_images_cv_project",
     version="0.1.0",
     description="Object Detection and Segmentation Multi-task Learning",
-    author="Your Name",
-    author_email="your.email@example.com",
-    url="https://github.com/yourname/multitask-vision",
+    author="Kim Young Jin",
+    author_email="kimyoungjin8399@naver.com",
+    url="https://github.com/kimyoungjin2023/Edoscopic_images_cv_project",
 
     packages=find_packages(where="src"),
     package_dir={"": "src"},
@@ -37,3 +37,4 @@ setup(
         "Operating System :: OS Independent",
     ],
 )
+
