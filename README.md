@@ -42,3 +42,27 @@ project/
 ├── pyproject.toml
 ├── Dockerfile
 └── README.md
+
+
+
+## 🛠 Tech Stack
+
+- PyTorch
+- OpenCV
+- Albumentations
+- Docker
+
+---
+
+## 🧱 HW
+
+- **GPU**: NVIDIA RTX 4060 Ti (8GB)
+- **CUDA**: 11.7
+- **CPU**: x86_64
+- **RAM**: 32GB
+
+---
+
+## 🐳 Docker
+
+본 프로젝트는 Docker 기반으로 실행 환경을 재현할 수 있습니다.
