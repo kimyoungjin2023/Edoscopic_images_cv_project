@@ -37,6 +37,15 @@
 
 ---
 
+👥 Team
+|Member |	Role |
+| :--- | :--- |
+|Member A |	Model design & training|
+|Member B |	Dataset preprocessing|
+|Member C |	Evaluation & visualization|
+
+---
+
 ## 📁 Project Structure
 
 ```text
