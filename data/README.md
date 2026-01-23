@@ -15,12 +15,8 @@ data/
 │   ├── train/
 │   ├── val/
 │   └── test/
-├── labels/
-│   ├── train/
-│   ├── val/
-│   └── test/
-├── masks/
-│   ├── train/
-│   ├── val/
-│   └── test/
+├── annotations/
+│   ├── train.json
+│   ├── val.json
+│   └── test.json
 └── README.md
