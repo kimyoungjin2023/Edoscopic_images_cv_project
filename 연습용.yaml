@@ -1,0 +1,10 @@
+Segementation, Detection(모델)
+
+
+------
+YOLO(You Only Look Once) 버전 v5, v8
+- CNN기반 모델이고, 예를들면 전체로 CNN을 한번만 본다의 모델이다 (예시)
+
+Fast R-CNN
+
+--------
