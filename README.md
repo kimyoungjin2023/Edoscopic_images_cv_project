@@ -1,23 +1,38 @@
-# Edoscopic_images_cv_project
-Edoscopic_images_cv_project(cv_project)
+# Multi-task Vision: Object Detection & Segmentation
 
-# Project Name
+PyTorch 기반 **Object Detection + Segmentation 멀티태스크 학습 프로젝트**입니다.  
+단일 모델로 bounding box 예측과 pixel-wise segmentation을 동시에 수행합니다.
 
-## Overview
-Object Detection & Segmentation using XXX
+---
 
-## Installation
-pip install -r requirements.txt
+## 🚀 Features
 
-## Dataset Structure
+- Detection + Segmentation 멀티태스크 학습
+- IoU-based bounding box loss
+- BCE + Dice segmentation loss
+- Config 기반 실험 관리
+- Modular & clean codebase (research / production friendly)
 
-### 실제의 위, 대장 내시경의 궤양, 용종, 암 이미지를 기반으로 위 20,000장(궤양 5,000장, 용종 5,000장, 암 10,000장), 대장 20,000장(궤양 5,000장, 용종 5,000장, 암 10,000장) 총 40,000장의 내시경 이미지 합성이미지를 생성
+---
 
-## Training
-python src/train.py --config configs/config.yaml
+## 📁 Project Structure
 
-## Inference
-python src/infer.py --weights ...
-
-## Results
-(mAP, IoU, 이미지)
+```text
+project/
+├── src/
+│   ├── train.py
+│   ├── eval.py
+│   ├── infer.py
+│   ├── models/
+│   ├── datasets/
+│   ├── losses/
+│   └── utils/
+├── configs/
+├── data/
+│   ├── README.md
+│   └── sample/
+├── scripts/
+├── requirements.txt
+├── pyproject.toml
+├── Dockerfile
+└── README.md
