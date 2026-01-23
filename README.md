@@ -1,7 +1,7 @@
 # 👁️ Multi-task Vision: Object Detection & Segmentation
 
 ![Project Status](https://img.shields.io/badge/Status-Active-success)
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-1.13%2B-EE4C2C)
 ![Docker](https://img.shields.io/badge/Docker-Available-2496ED)
 
