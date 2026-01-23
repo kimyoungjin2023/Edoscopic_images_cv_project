@@ -80,8 +80,8 @@ project/
 | :--- | :--- |
 | **GPU** | NVIDIA RTX 4060 Ti (8GB) |
 | **CUDA** | Version 11.7 |
-| **CPU** | x86_64 Architecture |
-| **RAM** | 32GB |
+| **CPU** | AMD Ryzen 5 5600 6-core |
+| **RAM** | 16GB |
 
 ---
 
