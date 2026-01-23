@@ -1,22 +1,39 @@
-# Multi-task Vision: Object Detection & Segmentation
+# 👁️ Multi-task Vision: Object Detection & Segmentation
 
-본 프로젝트는 **Object Detection과 Segmentation을 동시에 수행하는 멀티태스크 비전 모델**을 개발하는  
-**팀 기반 포트폴리오 프로젝트**입니다.
+![Project Status](https://img.shields.io/badge/Status-Active-success)
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-1.13%2B-EE4C2C)
+![Docker](https://img.shields.io/badge/Docker-Available-2496ED)
 
-PyTorch 기반으로 학습 파이프라인을 직접 설계하였으며,  
-의료 영상(내시경 이미지) 데이터를 활용하여 실전 문제에 가까운 환경을 목표로 했습니다.
+> **Object Detection과 Segmentation을 동시에 수행하는 멀티태스크 비전 모델 개발**
+> 의료 영상(내시경 데이터)을 활용하여 실전 문제 해결을 목표로 한 **팀 기반 포트폴리오 프로젝트**입니다.
 
 ---
 
 ## 🚀 Key Features
 
-- Object Detection + Segmentation 멀티태스크 학습
-- COCO-style annotation 기반 데이터 처리
-- IoU 기반 Bounding Box Loss
-- BCE + Dice Segmentation Loss
-- Config 기반 실험 관리
-- 확장 가능한 모듈형 코드 구조
-- Docker 기반 재현 가능한 실행 환경
+본 프로젝트는 단일 모델 내에서 두 가지 비전 태스크를 효율적으로 처리하기 위해 다음과 같은 기능을 구현했습니다.
+
+* **Multi-task Learning:** Object Detection + Segmentation 동시 학습 구조 설계
+* **Data Pipeline:** COCO-style annotation 파싱 및 전처리 자동화
+* **Loss Function:**
+    * **Detection:** IoU 기반 Bounding Box Loss
+    * **Segmentation:** BCE(Binary Cross Entropy) + Dice Loss 결합
+* **Experiment Mgmt:** YAML Config 기반의 유연한 실험 관리
+* **Modular Code:** 유지보수와 확장이 용이한 모듈형 구조 (`src/` 분리)
+* **Reproducibility:** Docker를 이용한 동일한 실행 환경 보장
+
+---
+
+## 🛠 Tech Stack
+
+프로젝트에 사용된 주요 기술 스택입니다.
+
+| Category | Technology |
+| :--- | :--- |
+| **Framework** | ![PyTorch](https://img.shields.io/badge/-PyTorch-EE4C2C?style=flat&logo=pytorch&logoColor=white) |
+| **Vision Libs** | ![OpenCV](https://img.shields.io/badge/-OpenCV-5C3EE8?style=flat&logo=opencv&logoColor=white) ![Albumentations](https://img.shields.io/badge/-Albumentations-F05032?style=flat) |
+| **Environment** | ![Docker](https://img.shields.io/badge/-Docker-2496ED?style=flat&logo=docker&logoColor=white) |
 
 ---
 
@@ -25,52 +42,44 @@ PyTorch 기반으로 학습 파이프라인을 직접 설계하였으며,
 ```text
 project/
 ├── src/
-│   ├── train.py
-│   ├── eval.py
-│   ├── infer.py
-│   ├── models/
-│   ├── datasets/
-│   ├── losses/
-│   └── utils/
-├── configs/
+│   ├── train.py           # 학습 실행 스크립트
+│   ├── eval.py            # 모델 평가 및 검증
+│   ├── infer.py           # 추론(Inference) 실행
+│   ├── models/            # 모델 아키텍처 정의
+│   ├── datasets/          # 데이터 로더 및 전처리
+│   ├── losses/            # Custom Loss 함수 정의
+│   └── utils/             # 유틸리티 함수 모음
+├── configs/               # 실험 설정 파일 (.yaml)
 ├── data/
-│   ├── images/
-│   ├── annotations/
+│   ├── images/            # 원본 이미지
+│   ├── annotations/       # COCO format json
 │   └── README.md
-├── scripts/
-├── requirements.txt
-├── pyproject.toml
-├── Dockerfile
-└── README.md
-
-text```
-
----
-🛠 Tech Stack
-PyTorch
-
-OpenCV
-
-Albumentations
-
-Docker
+├── scripts/               # 쉘 스크립트 모음
+├── requirements.txt       # 의존성 패키지 목록
+├── pyproject.toml         # 프로젝트 설정
+├── Dockerfile             # 도커 빌드 파일
+└── README.md              # 프로젝트 문서
+```
 
 ---
 
-🧱 HW
-GPU: NVIDIA RTX 4060 Ti (8GB)
+## 🧱 Hardware Environment
 
-CUDA: 11.7
+실험 및 학습은 아래 환경에서 진행되었습니다.
 
-CPU: x86_64
-
-RAM: 32GB
+| Component | Specification |
+| :--- | :--- |
+| **GPU** | NVIDIA RTX 4060 Ti (8GB) |
+| **CUDA** | Version 11.7 |
+| **CPU** | x86_64 Architecture |
+| **RAM** | 32GB |
 
 ---
 
-🐳 Docker
-본 프로젝트는 Docker 기반으로 실행 환경을 재현할 수 있습니다.
+## 🐳 How to Run (Docker)
 
+Docker를 사용하여 복잡한 환경 설정 없이 바로 프로젝트를 실행할 수 있습니다.
 
+### 1. Build Image
+```bash
 docker build -t multitask-vision .
-docker run --gpus all -it multitask-vision
