@@ -40,9 +40,9 @@
 👥 Team
 |Member |	Role |
 | :--- | :--- |
-|Member A |	Model design & training|
-|Member B |	Dataset preprocessing|
-|Member C |	Evaluation & visualization|
+|이정결 |	Model design & training|
+|박소윤 |	Dataset preprocessing|
+|한지수 |	Evaluation & visualization|
 
 ---
 
