@@ -36,6 +36,7 @@ project/
 ├── pyproject.toml
 ├── Dockerfile
 └── README.md
+'''
 
 ---
 
