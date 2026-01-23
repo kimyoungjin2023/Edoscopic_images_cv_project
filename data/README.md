@@ -1,9 +1,8 @@
-# Dataset Guide
+# Dataset Guide — Endoscopy Synthetic Dataset (AI Hub)
 
-본 프로젝트는 **Object Detection + Segmentation 멀티태스크 학습**을 위한  
-데이터 구조를 사용합니다.
-
-Detection과 Segmentation 데이터는 **동일한 이미지 기준**으로 구성됩니다.
+이 프로젝트는 **AI Hub 내시경 이미지 합성데이터** 기반으로  
+Object Detection + Segmentation 모델 학습을 목표로 합니다.  
+(데이터셋: 위/대장 내시경 병변 합성 이미지) :contentReference[oaicite:2]{index=2}
 
 ---
 
@@ -20,3 +19,4 @@ data/
 │   ├── val.json
 │   └── test.json
 └── README.md
+
