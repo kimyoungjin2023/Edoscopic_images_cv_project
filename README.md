@@ -83,3 +83,4 @@ Docker를 사용하여 복잡한 환경 설정 없이 바로 프로젝트를 실
 ### 1. Build Image
 ```bash
 docker build -t multitask-vision .
+docker run --gpus all -it multitask-vision
