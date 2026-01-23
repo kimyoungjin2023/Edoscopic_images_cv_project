@@ -10,13 +10,13 @@ PyTorch 기반으로 학습 파이프라인을 직접 설계하였으며,
 
 ## 🚀 Key Features
 
-- ✅ Object Detection + Segmentation 멀티태스크 학습
-- ✅ COCO-style annotation 기반 데이터 처리
-- ✅ IoU 기반 Bounding Box Loss
-- ✅ BCE + Dice Segmentation Loss
-- ✅ Config 기반 실험 관리
-- ✅ 확장 가능한 모듈형 코드 구조
-- ✅ Docker 기반 재현 가능한 실행 환경
+- Object Detection + Segmentation 멀티태스크 학습
+- COCO-style annotation 기반 데이터 처리
+- IoU 기반 Bounding Box Loss
+- BCE + Dice Segmentation Loss
+- Config 기반 실험 관리
+- 확장 가능한 모듈형 코드 구조
+- Docker 기반 재현 가능한 실행 환경
 
 ---
 
@@ -42,29 +42,27 @@ project/
 ├── pyproject.toml
 ├── Dockerfile
 └── README.md
+🛠 Tech Stack
+PyTorch
 
-...
+OpenCV
 
+Albumentations
 
-## 🛠 Tech Stack
+Docker
 
-- PyTorch
-- OpenCV
-- Albumentations
-- Docker
+🧱 HW
+GPU: NVIDIA RTX 4060 Ti (8GB)
 
----
+CUDA: 11.7
 
-## 🧱 HW
+CPU: x86_64
 
-- **GPU**: NVIDIA RTX 4060 Ti (8GB)
-- **CUDA**: 11.7
-- **CPU**: x86_64
-- **RAM**: 32GB
+RAM: 32GB
 
----
-
-## 🐳 Docker
-
+🐳 Docker
 본 프로젝트는 Docker 기반으로 실행 환경을 재현할 수 있습니다.
 
+
+docker build -t multitask-vision .
+docker run --gpus all -it multitask-vision
