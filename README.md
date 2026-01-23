@@ -36,3 +36,9 @@ project/
 ├── pyproject.toml
 ├── Dockerfile
 └── README.md
+
+---
+
+### Hardware
+- Tested on NVIDIA RTX 4060 Ti (8GB)
+- CUDA 11.7
