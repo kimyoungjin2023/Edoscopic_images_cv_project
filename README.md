@@ -2,7 +2,7 @@
 
 ![Project Status](https://img.shields.io/badge/Status-Active-success)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![PyTorch](https://img.shields.io/badge/PyTorch-1.13%2B-EE4C2C)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.5.1+cu121%2B-EE4C2C)
 ![Docker](https://img.shields.io/badge/Docker-Available-2496ED)
 
 > **Object Detection과 Segmentation을 동시에 수행하는 멀티태스크 비전 모델 개발**
