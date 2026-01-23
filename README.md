@@ -43,6 +43,7 @@ project/
 ├── Dockerfile
 └── README.md
 
+...
 
 
 ## 🛠 Tech Stack
@@ -66,3 +67,4 @@ project/
 ## 🐳 Docker
 
 본 프로젝트는 Docker 기반으로 실행 환경을 재현할 수 있습니다.
+
