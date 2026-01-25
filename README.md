@@ -101,7 +101,27 @@ docker run --gpus all -it multitask-vision
 
 R-CNN 계열(2-Stage)의 발전 과정과 YOLO(1-Stage)의 구조적 차이를 보여주는 비교 다이어그램입니다.
 
-![Object Detection Models Comparison](http://googleusercontent.com/image_collection/image_retrieval/13094427813228388248_0)
+# Object Detection Models Comparison
+
+## R-CNN
+- Region Proposal 기반 객체 검출
+- Selective Search로 영역 생성
+- CNN을 각 영역마다 적용 → 매우 느림
+
+## Fast R-CNN
+- 전체 이미지를 한 번만 CNN에 통과
+- RoI Pooling 도입
+- End-to-End 학습 가능
+
+## Faster R-CNN
+- Region Proposal Network (RPN) 도입
+- Selective Search 제거
+- 높은 정확도의 Two-stage Detector
+
+## YOLO
+- 객체 검출을 하나의 회귀 문제로 해결
+- 매우 빠른 속도
+- 실시간 객체 검출 가능
 
 ### 모델별 핵심 요약
 
@@ -109,3 +129,18 @@ R-CNN 계열(2-Stage)의 발전 과정과 YOLO(1-Stage)의 구조적 차이를 �
 * **Fast R-CNN**: 이미지 전체를 한 번만 CNN에 통과시키고(Feature Map 공유), RoI Pooling을 도입하여 속도 개선.
 * **Faster R-CNN**: 병목이었던 영역 제안(Region Proposal) 과정을 RPN(Region Proposal Network)으로 대체하여 완전한 딥러닝 구조(End-to-End) 완성.
 * **YOLO**: 별도의 영역 제안 과정 없이 그리드(Grid) 방식을 사용하여 물체의 위치와 종류를 한 번에 예측(One-Stage)하여 실시간 처리 가능.
+
+* # Object Detection Algorithms: R-CNN vs Fast R-CNN vs Faster R-CNN vs YOLO
+
+## 📌 알고리즘 비교
+
+| 알고리즘 | 구조 | 장점 | 단점 |
+|----------|------|------|------|
+| **R-CNN (2014)** | Selective Search → CNN → SVM + BBox | 정확도 높음 | 속도 매우 느림 |
+| **Fast R-CNN (2015)** | CNN → Feature Map → RoI Pooling → Softmax + BBox | 속도 개선 | Selective Search 필요 |
+| **Faster R-CNN (2016)** | CNN → RPN → RoI Pooling → Softmax + BBox | Selective Search 제거, 속도 향상 | 실시간 부족 |
+| **YOLO (2016~)** | Grid 분할 → 각 셀에서 BBox + Class 예측 | 매우 빠름, 실시간 가능 | 작은 객체 탐지 약함 |
+
+## 🖼️ 구조 비교 다이어그램
+![비교 다이어그램](https://copilot.microsoft.com/th/id/BCO.0a7487ed-1e7d-40d6-9908-76796146df7f.png)
+
