@@ -123,24 +123,96 @@ R-CNN 계열(2-Stage)의 발전 과정과 YOLO(1-Stage)의 구조적 차이를 �
 - 매우 빠른 속도
 - 실시간 객체 검출 가능
 
-### 모델별 핵심 요약
+# 객체 탐지 알고리즘: R-CNN, Fast R-CNN, Faster R-CNN, YOLO 비교
 
-* **R-CNN**: Selective Search로 영역을 제안하고, 각 영역마다 CNN을 돌려 속도가 매우 느림.
-* **Fast R-CNN**: 이미지 전체를 한 번만 CNN에 통과시키고(Feature Map 공유), RoI Pooling을 도입하여 속도 개선.
-* **Faster R-CNN**: 병목이었던 영역 제안(Region Proposal) 과정을 RPN(Region Proposal Network)으로 대체하여 완전한 딥러닝 구조(End-to-End) 완성.
-* **YOLO**: 별도의 영역 제안 과정 없이 그리드(Grid) 방식을 사용하여 물체의 위치와 종류를 한 번에 예측(One-Stage)하여 실시간 처리 가능.
+이 문서는 객체 탐지(Object Detection) 분야의 대표적인 딥러닝 알고리즘인 R-CNN, Fast R-CNN, Faster R-CNN, 그리고 YOLO의 개념, 알고리즘, 장단점 및 주요 차이점을 설명합니다.
 
-* # Object Detection Algorithms: R-CNN vs Fast R-CNN vs Faster R-CNN vs YOLO
+---
 
-## 📌 알고리즘 비교
+## 1. R-CNN (Region-based Convolutional Neural Networks)
 
-| 알고리즘 | 구조 | 장점 | 단점 |
-|----------|------|------|------|
-| **R-CNN (2014)** | Selective Search → CNN → SVM + BBox | 정확도 높음 | 속도 매우 느림 |
-| **Fast R-CNN (2015)** | CNN → Feature Map → RoI Pooling → Softmax + BBox | 속도 개선 | Selective Search 필요 |
-| **Faster R-CNN (2016)** | CNN → RPN → RoI Pooling → Softmax + BBox | Selective Search 제거, 속도 향상 | 실시간 부족 |
-| **YOLO (2016~)** | Grid 분할 → 각 셀에서 BBox + Class 예측 | 매우 빠름, 실시간 가능 | 작은 객체 탐지 약함 |
+R-CNN은 딥러닝을 객체 탐지에 처음으로 적용한 모델 중 하나로, 객체 탐지 문제를 여러 단계로 나누어 해결합니다.
 
-## 🖼️ 구조 비교 다이어그램
-![비교 다이어그램](https://copilot.microsoft.com/th/id/BCO.0a7487ed-1e7d-40d6-9908-76796146df7f.png)
+### 알고리즘 개요
+1.  **Region Proposal:** Selective Search를 통해 객체 후보 영역을 추출합니다.
+2.  **Feature Extraction:** 각 후보 영역을 CNN에 통과시켜 특징을 추출합니다.
+3.  **Classification:** 추출된 특징을 SVM으로 분류합니다.
+4.  **Bounding Box Regression:** 경계 상자의 위치를 정교하게 조정합니다.
 
+### 특징 요약
+- **장점:** 딥러닝 기반의 높은 정확도.
+- **단점:** 각 Region Proposal마다 CNN을 실행하여 매우 느림.
+
+### R-CNN 알고리즘 시각화
+![R-CNN Algorithm Visualization](https://i.imgur.com/your_r_cnn_image_link.png) ---
+
+## 2. Fast R-CNN
+
+Fast R-CNN은 R-CNN의 느린 속도 문제를 개선한 모델입니다. 전체 이미지에서 한 번만 특징 맵을 추출하여 여러 Region Proposal에 공유합니다.
+
+### 알고리즘 개요
+1.  **Region Proposal:** R-CNN과 동일하게 Selective Search로 후보 영역을 추출합니다.
+2.  **Feature Extraction:** 전체 이미지를 CNN에 통과시켜 특징 맵을 생성합니다.
+3.  **RoI Pooling:** 특징 맵에서 각 Region Proposal에 해당하는 영역을 고정된 크기로 변환합니다.
+4.  **Classification & Bounding Box Regression:** 단일 네트워크 내에서 객체 분류와 경계 상자 회귀를 동시에 수행합니다.
+
+### 특징 요약
+- **장점:** R-CNN보다 훨씬 빠른 속도, End-to-end 학습 가능.
+- **단점:** 여전히 Selective Search가 병목 현상을 일으킴.
+
+### Fast R-CNN 알고리즘 시각화
+![Fast R-CNN Algorithm Visualization](https://i.imgur.com/your_fast_r_cnn_image_link.png) ---
+
+## 3. Faster R-CNN
+
+Faster R-CNN은 Fast R-CNN의 Region Proposal 단계마저 딥러닝 네트워크 내부로 통합하여 진정한 End-to-end 객체 탐지를 가능하게 했습니다.
+
+### 알고리즘 개요
+1.  **Feature Extraction:** 전체 이미지에서 특징 맵을 생성합니다.
+2.  **RPN (Region Proposal Network):** 특징 맵을 기반으로 객체 후보 영역을 제안합니다.
+3.  **RoI Pooling:** RPN이 제안한 영역과 특징 맵을 사용하여 고정 크기 특징 벡터를 생성합니다.
+4.  **Classification & Bounding Box Regression:** 객체 분류와 경계 상자 회귀를 수행합니다.
+
+### 특징 요약
+- **장점:** 객체 탐지의 모든 단계를 딥러닝 네트워크 내에서 처리, 높은 정확도와 빠른 속도.
+- **단점:** 여전히 2단계 구조로 YOLO보다 상대적으로 느릴 수 있음.
+
+### Faster R-CNN 알고리즘 시각화
+![Faster R-CNN Algorithm Visualization](https://i.imgur.com/your_faster_r_cnn_image_link.png) ---
+
+## 4. YOLO (You Only Look Once)
+
+YOLO는 객체 탐지 문제를 단일 회귀 문제로 간주하여, 이미지를 한 번만 보고 객체의 위치와 클래스를 동시에 예측하는 혁신적인 모델입니다.
+
+### 알고리즘 개요
+1.  **Grid System:** 이미지를 그리드로 나눕니다.
+2.  **Prediction per Grid Cell:** 각 그리드 셀은 여러 경계 상자, 신뢰도 점수, 클래스 확률을 예측합니다.
+3.  **Non-Maximum Suppression (NMS):** 겹치는 경계 상자를 제거하고 최종 예측을 확정합니다.
+
+### 특징 요약
+- **장점:** 매우 빠름, 실시간 객체 탐지 가능, End-to-end 학습.
+- **단점:** R-CNN 계열에 비해 작은 객체나 밀집된 객체 탐지 성능이 상대적으로 낮을 수 있음 (최근 버전에서 많이 개선됨).
+
+### YOLO 알고리즘 시각화
+![YOLO Algorithm Visualization](https://i.imgur.com/your_yolo_image_link.png) ---
+
+## 주요 차이점 요약
+
+| 특징              | R-CNN                                      | Fast R-CNN                                  | Faster R-CNN                                | YOLO                                          |
+| :---------------- | :----------------------------------------- | :------------------------------------------ | :------------------------------------------ | :-------------------------------------------- |
+| **Region Proposal** | Selective Search (외부)                    | Selective Search (외부)                     | RPN (내부, 딥러닝 기반)                     | 없음 (그리드 기반 직접 예측)                  |
+| **Feature Extraction** | 각 Proposal마다 CNN (반복)                 | 전체 이미지에서 한 번 (Feature Map 공유)    | 전체 이미지에서 한 번 (Feature Map 공유)    | 전체 이미지에서 한 번                       |
+| **Pooling Layer** | 이미지 크기 조정                           | RoI Pooling                                 | RoI Pooling                                 | 없음                                          |
+| **Classifier** | SVM                                        | Softmax (Multi-task Loss)                   | Softmax (Multi-task Loss)                   | Softmax (그리드 셀 당 예측)                   |
+| **Bounding Box Regression** | 각 클래스별 선형 회귀                      | 단일 네트워크 내에서 분류와 동시 수행       | 단일 네트워크 내에서 분류와 동시 수행       | 단일 네트워크 내에서 분류와 동시 수행       |
+| **학습 단계** | 다단계 (Feature Extraction, SVM, BBox Reg) | 단일 단계 (End-to-end 가능)                 | 단일 단계 (End-to-end)                      | 단일 단계 (End-to-end)                      |
+| **속도** | 매우 느림                                  | R-CNN보다 빠름 (여전히 Region Proposal 병목) | 빠름 (실시간에 근접)                        | 매우 빠름 (실시간 탐지)                       |
+| **정확도** | 높음                                       | R-CNN과 유사하거나 약간 개선                  | 매우 높음                                   | R-CNN 계열보다 상대적으로 낮을 수 있음 (최근 버전 개선) |
+| **주요 장점** | 딥러닝 객체 탐지 시작                      | 속도 개선, End-to-end 학습 가능             | 객체 탐지 전 과정 딥러닝화, 높은 정확도 및 속도 | 실시간 탐지, 매우 빠름                        |
+| **주요 단점** | 매우 느림, 복잡한 학습                     | Region Proposal 병목 현상                   | 2단계 구조로 YOLO보다 느림                | 작은 객체, 밀집 객체 탐지 성능 저하           |
+
+---
+
+## 결론
+
+객체 탐지 기술은 R-CNN부터 시작하여 Fast R-CNN, Faster R-CNN으로 발전하며 정확도와 속도 모두 크게 향상되었습니다. YOLO는 이와는 다른 접근 방식으로 실시간 탐지라는 목표를 달성하며 또 다른 혁신을 가져왔습니다. 각 알고리즘은 고유한 장단점을 가지며, 적용하고자 하는 환경과 요구사항에 따라 적절한 모델을 선택하는 것이 중요합니다.
