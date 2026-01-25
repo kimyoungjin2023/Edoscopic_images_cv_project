@@ -99,3 +99,5 @@ docker run --gpus all -it multitask-vision
 
 ![R-CNN Comparison](https://copilot.microsoft.com/th/id/BCO.590fd018-a8c4-446e-8602-d4d0243660eb.png)
 
+![R-CNN Comparison](images/rcnn_comparison.png)
+
