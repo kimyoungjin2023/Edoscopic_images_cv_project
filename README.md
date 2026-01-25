@@ -97,8 +97,15 @@ docker run --gpus all -it multitask-vision
 
 ---
 
-![R-CNN Comparison](https://copilot.microsoft.com/th/id/BCO.590fd018-a8c4-446e-8602-d4d0243660eb.png)
+# 객체 탐지 모델 아키텍처 비교 (Object Detection Architecture Comparison)
 
+R-CNN 계열(2-Stage)의 발전 과정과 YOLO(1-Stage)의 구조적 차이를 보여주는 비교 다이어그램입니다.
 
-![R-CNN Comparison](https://copilot.microsoft.com/th/id/BCO.67698d92-1cf5-47d6-83d6-028e4a841d90.png)
+![Object Detection Models Comparison](http://googleusercontent.com/image_collection/image_retrieval/13094427813228388248_0)
 
+### 모델별 핵심 요약
+
+* **R-CNN**: Selective Search로 영역을 제안하고, 각 영역마다 CNN을 돌려 속도가 매우 느림.
+* **Fast R-CNN**: 이미지 전체를 한 번만 CNN에 통과시키고(Feature Map 공유), RoI Pooling을 도입하여 속도 개선.
+* **Faster R-CNN**: 병목이었던 영역 제안(Region Proposal) 과정을 RPN(Region Proposal Network)으로 대체하여 완전한 딥러닝 구조(End-to-End) 완성.
+* **YOLO**: 별도의 영역 제안 과정 없이 그리드(Grid) 방식을 사용하여 물체의 위치와 종류를 한 번에 예측(One-Stage)하여 실시간 처리 가능.
