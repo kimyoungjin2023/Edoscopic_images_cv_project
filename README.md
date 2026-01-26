@@ -134,7 +134,8 @@ R-CNN은 딥러닝을 객체 탐지에 처음으로 적용한 모델 중 하나�
 - **단점:** 각 Region Proposal마다 CNN을 실행하여 매우 느림.
 
 ### R-CNN 알고리즘 시각화
-![R-CNN Algorithm Visualization](https://i.imgur.com/your_r_cnn_image_link.png) ---
+![R-CNN Algorithm Visualization](images/R-CNN.png) 
+---
 
 ## 2. Fast R-CNN
 
@@ -151,7 +152,8 @@ Fast R-CNN은 R-CNN의 느린 속도 문제를 개선한 모델입니다. 전체
 - **단점:** 여전히 Selective Search가 병목 현상을 일으킴.
 
 ### Fast R-CNN 알고리즘 시각화
-![Fast R-CNN Algorithm Visualization](https://i.imgur.com/your_fast_r_cnn_image_link.png) ---
+![Fast R-CNN Algorithm Visualization](images/FastR-CNN.png) 
+---
 
 ## 3. Faster R-CNN
 
@@ -168,7 +170,8 @@ Faster R-CNN은 Fast R-CNN의 Region Proposal 단계마저 딥러닝 네트워�
 - **단점:** 여전히 2단계 구조로 YOLO보다 상대적으로 느릴 수 있음.
 
 ### Faster R-CNN 알고리즘 시각화
-![Faster R-CNN Algorithm Visualization](https://i.imgur.com/your_faster_r_cnn_image_link.png) ---
+![Faster R-CNN Algorithm Visualization](images/FasterR-CNN.png) 
+---
 
 ## 4. YOLO (You Only Look Once)
 
@@ -184,7 +187,9 @@ YOLO는 객체 탐지 문제를 단일 회귀 문제로 간주하여, 이미지�
 - **단점:** R-CNN 계열에 비해 작은 객체나 밀집된 객체 탐지 성능이 상대적으로 낮을 수 있음 (최근 버전에서 많이 개선됨).
 
 ### YOLO 알고리즘 시각화
-![YOLO Algorithm Visualization]([(https://img1.daumcdn.net/thumb/R1280x0/scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdna%2Fbe3Up8%2FdJMcai9Uxlk%2FAAAAAAAAAAAAAAAAAAAAAEYUXETrRcWm0TNIzefK3OhxlR4OrJ7Ud7Wb093uZiVU%2Fimg.png%3Fcredential%3DyqXZFxpELC7KVnFOS48ylbz2pIh7yKj8%26expires%3D1769871599%26allow_ip%3D%26allow_referer%3D%26signature%3DMh56QgEkUtR797%252Fb4tpktqMzXRs%253D)---
+![YOLO Algorithm Visualization](images/yolo1.png)
+![YOLO Algorithm Visualization](images/yolo2.png)
+---
 
 ## 주요 차이점 요약
 
