@@ -35,16 +35,6 @@
 | **Vision Libs** | ![OpenCV](https://img.shields.io/badge/-OpenCV-5C3EE8?style=flat&logo=opencv&logoColor=white) ![Albumentations](https://img.shields.io/badge/-Albumentations-F05032?style=flat) ![Ultralytics](https://img.shields.io/badge/-Ultralytics-0070FF?style=flat&logo=ultralytics&logoColor=white)|
 | **Environment** | ![Docker](https://img.shields.io/badge/-Docker-2496ED?style=flat&logo=docker&logoColor=white) |
 
----
-
-👥 Team
-|Member |	Role |
-| :--- | :--- |
-|이정결 |	Model design & training|
-|박소윤 |	Dataset preprocessing|
-|한지수 |	Evaluation & visualization|
-
----
 
 ## 📁 Project Structure
 
@@ -194,7 +184,7 @@ YOLO는 객체 탐지 문제를 단일 회귀 문제로 간주하여, 이미지�
 - **단점:** R-CNN 계열에 비해 작은 객체나 밀집된 객체 탐지 성능이 상대적으로 낮을 수 있음 (최근 버전에서 많이 개선됨).
 
 ### YOLO 알고리즘 시각화
-![YOLO Algorithm Visualization](https://i.imgur.com/your_yolo_image_link.png) ---
+![YOLO Algorithm Visualization]([https://i.imgur.com/your_yolo_image_link.png](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdna%2FbKt0K5%2FdJMcai9Uxlj%2FAAAAAAAAAAAAAAAAAAAAANQt56lcwJxaQNtZ_--94WDMDFlLf3AMCJif5nRHRNf3%2Fimg.png%3Fcredential%3DyqXZFxpELC7KVnFOS48ylbz2pIh7yKj8%26expires%3D1769871599%26allow_ip%3D%26allow_referer%3D%26signature%3DbSO0liRZIUZPXwWv7%252BpSaSn5AoY%253D)) ---
 
 ## 주요 차이점 요약
 
