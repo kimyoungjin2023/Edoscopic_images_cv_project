@@ -1,365 +1,442 @@
-# train_medical_segmentation.py (완전 수정 버전)
+#!/usr/bin/env python3
+"""
+의료 영상 Segmentation Inference 스크립트
+Mask R-CNN 모델로 대장/위 내시경 이미지의 병변(궤양, 암, 용종)을 검출
+"""
+
 import torch
-import os
-import argparse
-from torch.utils.data import DataLoader, ConcatDataset, random_split
 from torchvision import transforms
-from torchvision.models.detection import maskrcnn_resnet50_fpn
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
-from datasets.medical_folder_dataset import MedicalFolderDataset, collate_fn_filter_empty
-from tqdm import tqdm
-import time
+from PIL import Image
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import sys
+import unicodedata
 
-def get_device(force_mps=False):
-    """
-    최적의 device 선택
-    ⚠️ Mask R-CNN은 MPS에서 불안정 → 기본적으로 CPU 사용
-    """
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        print(f"🖥️ Using device: CUDA - {torch.cuda.get_device_name(0)}")
-        return device, True  # (device, can_use_workers)
-    
-    if torch.backends.mps.is_available():
-        if force_mps:
-            device = torch.device("mps")
-            print(f"🖥️ Using device: MPS (Apple Silicon) - EXPERIMENTAL!")
-            print("   ⚠️ May crash with Mask R-CNN. Use --cpu if unstable.")
-            return device, False  # MPS는 num_workers=0 필요
-        else:
-            print("⚠️ MPS available but disabled (Mask R-CNN compatibility)")
-            print("   Use --force-mps to override (may crash)")
-    
-    device = torch.device("cpu")
-    print(f"🖥️ Using device: CPU")
-    return device, True  # CPU는 workers 사용 가능
+# ⭐ Import 경로 수정
+try:
+    from datasets.medical_folder_dataset import MedicalFolderDataset
+except ImportError:
+    from medical_folder_dataset import MedicalFolderDataset
+
+# 한글 폰트 설정
+try:
+    plt.rcParams['font.family'] = 'AppleGothic'
+    plt.rcParams['axes.unicode_minus'] = False
+except:
+    print("⚠️ 한글 폰트 설정 실패 (시각화는 정상 작동)")
 
 
-def get_model(num_classes):
-    """Mask R-CNN 모델 생성"""
-    model = maskrcnn_resnet50_fpn(weights="DEFAULT")
+def get_model(num_classes, checkpoint_path):
+    """학습된 Mask R-CNN 모델 로드"""
+    from torchvision.models.detection import maskrcnn_resnet50_fpn
+    from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+    from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
     
+    model = maskrcnn_resnet50_fpn(weights=None)
+    
+    # Box predictor
     in_features = model.roi_heads.box_predictor.cls_score.in_features
     model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
     
+    # Mask predictor
     in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
     model.roi_heads.mask_predictor = MaskRCNNPredictor(
         in_features_mask, 256, num_classes
     )
     
+    # Checkpoint 로드
+    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.eval()
+    
+    print(f"📦 Loaded from epoch {checkpoint.get('epoch', 'unknown')}")
+    
     return model
 
 
-def train_one_epoch(model, dataloader, optimizer, device, epoch):
-    """1 epoch 학습 (AMP 제거 - 안정성 우선)"""
-    model.train()
-    epoch_loss = 0
-    num_batches = 0
-    skipped_batches = 0
+def normalize_class_name(name):
+    name = str(name).strip()
+
+    # ⭐ 유니코드 정규화 (이게 핵심)
+    name = unicodedata.normalize("NFC", name)
+
+    # 괄호 제거
+    if '(' in name:
+        name = name.split('(')[0].strip()
+
+    # 종양 → 용종 통일
+    if name == '종양':
+        name = '용종'
+
+    return name
+
+
+def visualize_predictions(image, outputs, ground_truth, class_names, threshold=0.5, save_path=None):
+    """예측 결과 시각화"""
+    image_np = image.permute(1, 2, 0).cpu().numpy()
     
-    loss_components = {
-        'loss_classifier': 0,
-        'loss_box_reg': 0,
-        'loss_mask': 0,
-        'loss_objectness': 0,
-        'loss_rpn_box_reg': 0
-    }
-
-    start_time = time.time()
-    pbar = tqdm(dataloader, desc=f"Epoch {epoch}")
+    boxes = outputs['boxes'].cpu().numpy()
+    scores = outputs['scores'].cpu().numpy()
+    labels = outputs['labels'].cpu().numpy()
+    masks = outputs['masks'].cpu().numpy()
     
-    for batch_idx, batch in enumerate(pbar):
-        if batch is None:
-            skipped_batches += 1
-            continue
+    # Threshold 적용
+    keep = scores > threshold
+    boxes = boxes[keep]
+    scores = scores[keep]
+    labels = labels[keep]
+    masks = masks[keep]
+    
+    # ⭐ Ground truth 정규화
+    gt_normalized = normalize_class_name(ground_truth)
+    
+    print(f"\n{'='*60}")
+    print(f"📊 Predictions (threshold={threshold})")
+    print(f"{'='*60}")
+    print(f"Ground Truth: '{gt_normalized}'")
+    print(f"Total detections: {len(scores)}")
+    
+    correct_count = 0
+    wrong_count = 0
+    
+    if len(scores) > 0:
+        print(f"Score range: {scores.min():.3f} - {scores.max():.3f}\n")
+        print("Predicted classes:")
         
-        images, targets = batch
-        images = [img.to(device) for img in images]
-        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-
-        try:
-            loss_dict = model(images, targets)
-            loss = sum(loss for loss in loss_dict.values())
-
-            if torch.isnan(loss):
-                print(f"\n⚠️ NaN at epoch {epoch}, batch {batch_idx}")
-                skipped_batches += 1
-                continue
-
-            optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
-
-            epoch_loss += loss.item()
-            num_batches += 1
+        for i, (label, score) in enumerate(zip(labels, scores)):
+            # ⭐ 클래스 이름 가져오고 정규화
+            class_name = class_names.get(int(label), f"class_{label}")
+            pred_normalized = normalize_class_name(class_name)
             
-            for k, v in loss_dict.items():
-                if k in loss_components:
-                    loss_components[k] += v.item()
+            # ⭐ 디버그 출력 (첫 예측만)
+            if i == 0:
+                print(f"  [DEBUG] Raw class_name: '{class_name}'")
+                print(f"  [DEBUG] Normalized: '{pred_normalized}'")
+                print(f"  [DEBUG] GT normalized: '{gt_normalized}'")
+                print(f"  [DEBUG] Match: {pred_normalized == gt_normalized}\n")
             
-            pbar.set_postfix({
-                'loss': f'{loss.item():.4f}',
-                'avg': f'{epoch_loss/num_batches:.4f}'
-            })
-        
-        except RuntimeError as e:
-            if "MPS" in str(e) or "Metal" in str(e):
-                print(f"\n❌ MPS Error at batch {batch_idx}")
-                print("   Try running with --cpu flag")
-                raise  # MPS 에러는 즉시 중단
+            # ⭐ 정규화된 값으로 비교
+            is_correct = (pred_normalized == gt_normalized)
+            
+            if is_correct:
+                correct_count += 1
+                status = "CORRECT"
+                emoji = "✓"
             else:
-                print(f"\n❌ Error at batch {batch_idx}: {e}")
-                skipped_batches += 1
-                continue
-
-    elapsed = time.time() - start_time
-    
-    if num_batches == 0:
-        print("⚠️ No valid batches!")
-        return 0.0
-    
-    if skipped_batches > len(dataloader) * 0.3:
-        print(f"⚠️ Warning: {skipped_batches} batches skipped")
-    
-    avg_loss = epoch_loss / num_batches
-    
-    print(f"\n[Epoch {epoch}] Loss: {avg_loss:.4f} | Time: {elapsed:.1f}s | Skipped: {skipped_batches}")
-    if epoch % 5 == 0 or epoch == 1:
-        print("  Loss components:")
-        for k, v in loss_components.items():
-            print(f"    {k}: {v/num_batches:.4f}")
-    
-    return avg_loss
-
-
-def validate(model, dataloader, device):
-    """Validation"""
-    model.eval()
-    val_loss = 0
-    num_batches = 0
-    
-    with torch.no_grad():
-        for batch in tqdm(dataloader, desc="Validation"):
-            if batch is None:
-                continue
+                wrong_count += 1
+                status = "WRONG"
+                emoji = "✗"
             
-            images, targets = batch
-            images = [img.to(device) for img in images]
-            targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-            
-            try:
-                loss_dict = model(images, targets)
-                loss = sum(loss for loss in loss_dict.values())
-                val_loss += loss.item()
-                num_batches += 1
-            except:
-                continue
+            print(f"  [{i}] {emoji} '{pred_normalized}': {score:.3f} [{status}]")
+        
+        print(f"\nSummary: {correct_count} correct, {wrong_count} wrong")
+    else:
+        print("No detections above threshold")
     
-    if num_batches == 0:
-        return 0.0
+    # 시각화
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     
-    return val_loss / num_batches
+    # 1. 원본 이미지
+    axes[0].imshow(image_np)
+    axes[0].set_title(f"Original\nGround Truth: {gt_normalized}", fontsize=12, weight='bold')
+    axes[0].axis('off')
+    
+    # 2. Bounding Boxes
+    axes[1].imshow(image_np)
+    for i, (box, score, label) in enumerate(zip(boxes, scores, labels)):
+        x1, y1, x2, y2 = box
+        
+        class_name = class_names.get(int(label), f"class_{label}")
+        pred_normalized = normalize_class_name(class_name)
+        is_correct = (pred_normalized == gt_normalized)
+        
+        # 색상: 초록=정답, 빨강=오답
+        color = 'green' if is_correct else 'red'
+        
+        rect = plt.Rectangle(
+            (x1, y1), x2-x1, y2-y1,
+            fill=False, edgecolor=color, linewidth=3
+        )
+        axes[1].add_patch(rect)
+        
+        # 라벨 텍스트
+        axes[1].text(
+            x1, y1-5, f"{pred_normalized}: {score:.2f}",
+            color=color, fontsize=10, weight='bold',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.9)
+        )
+    
+    title = f"Detections (n={len(boxes)})"
+    if len(boxes) > 0:
+        title += f"\nCorrect: {correct_count}, Wrong: {wrong_count}"
+    axes[1].set_title(title, fontsize=12, weight='bold')
+    axes[1].axis('off')
+    
+    # 3. Segmentation Masks
+    axes[2].imshow(image_np)
+    if len(masks) > 0:
+        combined_mask = masks[:, 0, :, :].sum(axis=0)
+        axes[2].imshow(combined_mask, alpha=0.6, cmap='jet')
+    axes[2].set_title("Segmentation Masks", fontsize=12, weight='bold')
+    axes[2].axis('off')
+    
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        print(f"Saved to: {save_path}")
+    
+    plt.close()
 
 
-def main(args):
-    # ⭐ Device 선택 (안정성 우선)
-    if args.cpu:
-        device = torch.device("cpu")
-        can_use_workers = True
-        print(f"🖥️ Using device: CPU (forced)")
-    else:
-        device, can_use_workers = get_device(args.force_mps)
+def batch_test(model, dataset, device, class_names, num_samples=10, threshold=0.5):
+    """배치 테스트 - 여러 샘플 평가"""
+    transform = transforms.Compose([
+        transforms.ToTensor()
+    ])
     
-    # ⭐ num_workers 조정
-    if not can_use_workers:
-        print(f"⚠️ Setting num_workers=0 for device compatibility")
-        args.num_workers = 0
+    results = {
+        'correct': 0,
+        'wrong': 0,
+        'no_detection': 0
+    }
     
-    transform = transforms.ToTensor()
+    os.makedirs("outputs/batch_inference", exist_ok=True)
     
-    # 데이터셋 로드
-    datasets = []
-    
-    if args.organ == 'colon' or args.organ == 'both':
-        print("\n" + "="*60)
-        print("Loading COLON dataset...")
-        print("="*60)
-        colon_dataset = MedicalFolderDataset(
-            image_root=args.image_root,
-            label_root=args.label_root,
-            organ_type='대장',
-            transforms=transform,
-            min_area=args.min_area,
-            resize=(args.img_size, args.img_size),
-            max_samples=args.max_samples
-        )
-        datasets.append(colon_dataset)
-    
-    if args.organ == 'stomach' or args.organ == 'both':
-        print("\n" + "="*60)
-        print("Loading STOMACH dataset...")
-        print("="*60)
-        stomach_dataset = MedicalFolderDataset(
-            image_root=args.image_root,
-            label_root=args.label_root,
-            organ_type='위',
-            transforms=transform,
-            min_area=args.min_area,
-            resize=(args.img_size, args.img_size),
-            max_samples=args.max_samples
-        )
-        datasets.append(stomach_dataset)
-    
-    # 데이터셋 합치기
-    if len(datasets) > 1:
-        print(f"\n🔗 Combining datasets...")
-        full_dataset = ConcatDataset(datasets)
-    else:
-        full_dataset = datasets[0]
-    
-    # Train/Val split
-    if args.val_split > 0:
-        train_size = int(len(full_dataset) * (1 - args.val_split))
-        val_size = len(full_dataset) - train_size
-        train_dataset, val_dataset = random_split(
-            full_dataset, [train_size, val_size]
-        )
-        print(f"\n📊 Train: {len(train_dataset)}, Val: {len(val_dataset)}")
-    else:
-        train_dataset = full_dataset
-        val_dataset = None
-        print(f"\n📊 Total training samples: {len(train_dataset)}")
-    
-    print(f"📦 Batch size: {args.batch_size}")
-    print(f"🔄 Batches per epoch: ~{len(train_dataset) // args.batch_size}")
-    
-    # ⭐ DataLoader (안전 설정)
-    dataloader = DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.num_workers,
-        collate_fn=collate_fn_filter_empty,
-        pin_memory=(device.type == "cuda"),
-        persistent_workers=(args.num_workers > 0),
-        drop_last=True
-    )
-    
-    val_loader = None
-    if val_dataset:
-        val_loader = DataLoader(
-            val_dataset,
-            batch_size=args.batch_size,
-            shuffle=False,
-            num_workers=args.num_workers,
-            collate_fn=collate_fn_filter_empty,
-            pin_memory=(device.type == "cuda"),
-            persistent_workers=(args.num_workers > 0)
-        )
-    
-    # num_classes 계산
-    if isinstance(full_dataset, ConcatDataset):
-        base_dataset = full_dataset.datasets[0]
-    else:
-        base_dataset = full_dataset
-    
-    num_classes = len(base_dataset.IDX_TO_CLASS) + 1
-    print(f"🎯 Num classes (with background): {num_classes}")
-    
-    # 모델
-    model = get_model(num_classes=num_classes)
-    model.to(device)
-    
-    # Optimizer
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=args.lr,
-        weight_decay=args.weight_decay
-    )
-    
-    # Scheduler
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, step_size=args.lr_step, gamma=0.1
-    )
-    
-    # 학습
+    # 디버그: 클래스 매핑 확인
     print("\n" + "="*60)
-    print("🚀 Starting training...")
+    print("DEBUG: Class Mapping Check")
+    print("="*60)
+    print("\nCLASS_NAMES dictionary:")
+    for label, name in class_names.items():
+        normalized = normalize_class_name(name)
+        print(f"  {label}: '{name}' → '{normalized}'")
+    
+    print("\nSample ground truths:")
+    for i in range(min(3, len(dataset))):
+        orig = dataset.samples[i]['class_name']
+        norm = normalize_class_name(orig)
+        print(f"  [{i}] '{orig}' → '{norm}'")
     print("="*60 + "\n")
     
-    os.makedirs(args.output_dir, exist_ok=True)
-    best_val_loss = float('inf')
-    
-    for epoch in range(1, args.num_epochs + 1):
-        train_loss = train_one_epoch(
-            model, dataloader, optimizer, device, epoch
-        )
-        lr_scheduler.step()
+    # 각 샘플 테스트
+    for i in range(min(num_samples, len(dataset))):
+        sample = dataset.samples[i]
         
-        # Validation
-        if val_loader and epoch % 5 == 0:
-            val_loss = validate(model, val_loader, device)
-            print(f"  📉 Val Loss: {val_loss:.4f}")
+        # 이미지 로드
+        image = Image.open(sample['image_path']).convert('RGB')
+        image = image.resize((384, 384))
+        image_tensor = transform(image).to(device)
+        
+        # Inference
+        with torch.no_grad():
+            outputs = model([image_tensor])[0]
+        
+        # 가장 높은 점수의 예측 찾기
+        scores = outputs['scores'].cpu().numpy()
+        labels = outputs['labels'].cpu().numpy()
+        
+        keep = scores > threshold
+        
+        # ⭐ Ground truth 정규화
+        gt_norm = normalize_class_name(sample['class_name'])
+        
+        if keep.sum() > 0:
+            # Threshold 이상인 것 중 최고 점수
+            filtered_scores = scores[keep]
+            filtered_labels = labels[keep]
             
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                save_path = os.path.join(args.output_dir, "best_model.pth")
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'val_loss': val_loss,
-                }, save_path)
-                print(f"  💾 Best model saved!")
+            best_idx = filtered_scores.argmax()
+            predicted_label = int(filtered_labels[best_idx])
+            predicted_class = class_names.get(predicted_label, 'unknown')
+            predicted_score = filtered_scores[best_idx]
+            
+            # ⭐ 예측 정규화
+            pred_norm = normalize_class_name(predicted_class)
+            
+            # ⭐ 결과 판정
+            if pred_norm == gt_norm:
+                results['correct'] += 1
+                print(f"✓ [{i}] CORRECT: '{gt_norm}' → '{pred_norm}' ({predicted_score:.3f})")
+            else:
+                results['wrong'] += 1
+                print(f"✗ [{i}] WRONG: '{gt_norm}' → '{pred_norm}' ({predicted_score:.3f})")
+        else:
+            results['no_detection'] += 1
+            print(f"? [{i}] NO DETECTION: '{gt_norm}'")
         
-        # 정기 저장
-        if epoch % args.save_interval == 0:
-            save_path = os.path.join(args.output_dir, f"model_epoch{epoch}.pth")
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': train_loss,
-            }, save_path)
-            print(f"  💾 Saved: {save_path}\n")
+        # 시각화 저장
+        save_path = f"outputs/batch_inference/sample_{i:03d}.png"
+        visualize_predictions(
+            image_tensor, outputs, sample['class_name'],
+            class_names, threshold, save_path
+        )
     
-    print("✅ Training completed!")
+    # 최종 통계
+    total = sum(results.values())
+    detected = total - results['no_detection']
+    
+    print("\n" + "="*60)
+    print("BATCH TEST RESULTS")
+    print("="*60)
+    print(f"Total samples: {total}")
+    print(f"Correct predictions: {results['correct']} ({results['correct']/total*100:.1f}%)")
+    print(f"Wrong predictions: {results['wrong']} ({results['wrong']/total*100:.1f}%)")
+    print(f"No detections: {results['no_detection']} ({results['no_detection']/total*100:.1f}%)")
+    
+    if detected > 0:
+        accuracy = results['correct'] / detected * 100
+        print(f"\nAccuracy (excluding no detections): {accuracy:.1f}%")
+    else:
+        print(f"\nAccuracy: N/A (no detections)")
+    
+    print("="*60)
+
+
+def main():
+    device = torch.device("cpu")
+    print(f"🖥️ Using device: {device}\n")
+    
+    # 클래스 정의 (Dataset의 IDX_TO_CLASS와 동일하게)
+    CLASS_NAMES = {
+        0: 'background',
+        1: '궤양 (ulcer)',
+        2: '암 (cancer)',
+        3: '종양 (tumor)'
+    }
+    
+    # 모델 로드
+    print("="*60)
+    print("Loading Model")
+    print("="*60)
+    
+    checkpoint_path = 'outputs/medical_seg/best_model.pth'
+    if not os.path.exists(checkpoint_path):
+        checkpoint_path = 'outputs/medical_seg/model_epoch5.pth'
+    
+    if not os.path.exists(checkpoint_path):
+        print(f"❌ Model not found at {checkpoint_path}")
+        print("Please train the model first!")
+        return
+    
+    model = get_model(num_classes=4, checkpoint_path=checkpoint_path)
+    model.to(device)
+    model.eval()
+    
+    # Detection threshold 설정
+    model.roi_heads.score_thresh = 0.05
+    model.roi_heads.nms_thresh = 0.5
+    
+    print("✅ Model loaded successfully!\n")
+    
+    # 테스트 모드 선택
+    print("="*60)
+    print("TEST OPTIONS")
+    print("="*60)
+    print("1. Single image test (with multiple thresholds)")
+    print("2. Batch test (10 samples, accuracy measurement)")
+    print("3. Custom image path")
+    print()
+    
+    mode = input("Enter choice (1/2/3): ").strip()
+    
+    if mode in ["1", "2"]:
+        # Dataset 로드
+        print("\nLoading dataset...")
+        try:
+            dataset = MedicalFolderDataset(
+                image_root='/Users/admin/Downloads/datasets/1.Training/1.원천데이터',
+                label_root='/Users/admin/Downloads/datasets/1.Training/2.라벨링데이터',
+                organ_type='대장',
+                transforms=None,
+                resize=(384, 384),
+                max_samples=50
+            )
+        except Exception as e:
+            print(f"❌ Error loading dataset: {e}")
+            print("Please check the data paths!")
+            return
+        
+        if mode == "1":
+            # Single image test
+            print(f"\nDataset has {len(dataset)} samples")
+            idx = int(input(f"Enter sample index (0-{len(dataset)-1}): "))
+            
+            if idx < 0 or idx >= len(dataset):
+                print(f"❌ Invalid index! Must be between 0 and {len(dataset)-1}")
+                return
+            
+            sample = dataset.samples[idx]
+            
+            # 이미지 로드
+            image = Image.open(sample['image_path']).convert('RGB')
+            image = image.resize((384, 384))
+            
+            transform = transforms.ToTensor()
+            image_tensor = transform(image).to(device)
+            
+            print(f"\nTesting: {os.path.basename(sample['image_path'])}")
+            print(f"Ground truth: {sample['class_name']}")
+            
+            # Inference
+            with torch.no_grad():
+                outputs = model([image_tensor])[0]
+            
+            # 여러 threshold로 테스트
+            os.makedirs("outputs/inference", exist_ok=True)
+            
+            for threshold in [0.3, 0.5, 0.7]:
+                print(f"\n{'='*60}")
+                print(f"Testing with threshold = {threshold}")
+                print(f"{'='*60}")
+                
+                save_path = f"outputs/inference/result_thresh{threshold:.1f}.png"
+                visualize_predictions(
+                    image_tensor, outputs, sample['class_name'],
+                    CLASS_NAMES, threshold, save_path
+                )
+        
+        elif mode == "2":
+            # Batch test
+            print("\nRunning batch test on 10 random samples...\n")
+            batch_test(
+                model, dataset, device, CLASS_NAMES,
+                num_samples=10, threshold=0.5
+            )
+    
+    elif mode == "3":
+        # Custom image
+        img_path = input("Enter image path: ").strip()
+        
+        if not os.path.exists(img_path):
+            print(f"❌ File not found: {img_path}")
+            return
+        
+        image = Image.open(img_path).convert('RGB')
+        print(f"Original size: {image.size}")
+        image = image.resize((384, 384))
+        
+        transform = transforms.ToTensor()
+        image_tensor = transform(image).to(device)
+        
+        print("\nRunning inference...")
+        with torch.no_grad():
+            outputs = model([image_tensor])[0]
+        
+        os.makedirs("outputs/custom", exist_ok=True)
+        save_path = "outputs/custom/result.png"
+        
+        visualize_predictions(
+            image_tensor, outputs, "Unknown",
+            CLASS_NAMES, threshold=0.5, save_path=save_path
+        )
+    
+    else:
+        print("❌ Invalid choice!")
+    
+    print("\n✅ Inference completed!")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    
-    # 데이터
-    parser.add_argument('--image-root', type=str,
-                    default='/Users/admin/Downloads/datasets/1.Training/1.원천데이터')
-    parser.add_argument('--label-root', type=str,
-                    default='/Users/admin/Downloads/datasets/1.Training/2.라벨링데이터')
-    parser.add_argument('--organ', type=str, choices=['colon', 'stomach', 'both'],
-                    default='colon')
-    
-    # 속도/안정성
-    parser.add_argument('--img-size', type=int, default=384)
-    parser.add_argument('--max-samples', type=int, default=500)
-    parser.add_argument('--batch-size', type=int, default=2)
-    
-    # 학습
-    parser.add_argument('--num-epochs', type=int, default=10)
-    parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--weight-decay', type=float, default=1e-4)
-    parser.add_argument('--lr-step', type=int, default=10)
-    parser.add_argument('--num-workers', type=int, default=4)
-    parser.add_argument('--save-interval', type=int, default=5)
-    parser.add_argument('--min-area', type=int, default=100)
-    parser.add_argument('--output-dir', type=str, default='outputs/medical_seg')
-    parser.add_argument('--val-split', type=float, default=0.1)
-    
-    # ⭐ Device 옵션
-    parser.add_argument('--cpu', action='store_true',
-                    help='Force use CPU (most stable)')
-    parser.add_argument('--force-mps', action='store_true',
-                    help='Force use MPS (may crash with Mask R-CNN)')
-    
-    args = parser.parse_args()
-    main(args)
+    main()
